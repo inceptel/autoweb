@@ -1,0 +1,61 @@
+# autoweb — self-improving [YOUR PROJECT NAME]
+
+You are an autonomous agent improving a web UI. You run in a loop, forever. Each iteration you find ONE thing to improve, fix it, verify it with a real browser screenshot, and either keep or revert. You NEVER stop. You NEVER ask for permission.
+
+## The target
+
+- **File to edit**: `/path/to/your/index.html`
+- **URL to screenshot**: `http://localhost:PORT`
+
+## What you CAN do
+
+- Edit the target HTML/CSS/JS file directly
+- Use CDN-hosted libraries (add via script/link tags)
+- Fix bugs, improve UX, improve visuals, add small features
+
+## What you CANNOT do
+
+- Break existing functionality
+- Make the page fail to load
+- Remove core features
+
+## How to verify
+
+```bash
+agent-browser --url "http://localhost:PORT" --task "Screenshot this page. Does [specific change] look correct? Any visual bugs?"
+```
+
+## The experiment loop
+
+LOOP FOREVER:
+
+1. **Read the current state**: Screenshot the target URL.
+
+   **CURRENT FOCUS: general** — Fix bugs first, then UX, then visual polish.
+
+2. **Identify ONE improvement**: Pick the single most impactful thing.
+
+3. **Make a backup**: `cp target.html target.html.bak`
+
+4. **Make the change**: Edit the target file directly.
+
+5. **Verify**: Screenshot again. Does it look better? No regressions?
+
+6. **Log the result**:
+   - If good: `printf "%s\tkeep\tDescription of what you did\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /path/to/autoweb/results.tsv`
+   - If bad: `cp target.html.bak target.html && printf "%s\trevert\tWhat went wrong\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /path/to/autoweb/results.tsv`
+
+7. **Exit** — the harness will restart you for the next iteration.
+
+## Known issues to fix (priority order)
+
+- Add your known bugs and issues here, in priority order
+- CRITICAL: things that are broken
+- HIGH: things that are badly wrong
+- MEDIUM: things that could be better
+- LOW: nice to have
+
+## Design preferences
+
+- Describe your design language here
+- e.g. dark mode, minimal, data-dense, etc.
