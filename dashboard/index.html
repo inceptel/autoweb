@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>autoweb dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --surface: #13131a; --surface2: #1a1a24;
+    --border: #252535; --text: #e8e8f0; --muted: #6b6b80;
+    --accent: #4f8ef7; --green: #3ddc84; --red: #ff4d4d;
+    --gold: #f5c842; --orange: #f5844f;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono','Fira Code','Courier New',monospace; font-size: 13px; }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-size: 14px; font-weight: 700; letter-spacing: 0.1em; }
+  .logo span { color: var(--accent); }
+  .url-form { display: flex; gap: 8px; align-items: center; }
+  .url-input { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 11px; padding: 5px 10px; border-radius: 4px; width: 340px; outline: none; }
+  .url-input:focus { border-color: var(--accent); }
+  .load-btn { background: var(--accent); color: white; border: none; font-family: inherit; font-size: 11px; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+  .load-btn:hover { opacity: 0.85; }
+
+  .stats { display: flex; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 16px; min-width: 90px; }
+  .stat-val { font-size: 22px; font-weight: 700; }
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat.green .stat-val { color: var(--green); }
+  .stat.red .stat-val { color: var(--red); }
+  .stat.gold .stat-val { color: var(--gold); }
+  .stat.muted .stat-val { color: var(--muted); }
+
+  .bar-row { padding: 10px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.5s; }
+  .bar-label { font-size: 11px; color: var(--muted); min-width: 80px; text-align: right; }
+
+  .section { padding: 14px 20px 0; }
+  .section-title { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 10px; color: var(--muted); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface); }
+
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge-keep { background: rgba(61,220,132,0.15); color: var(--green); }
+  .badge-revert { background: rgba(255,77,77,0.15); color: var(--red); }
+  .badge-crash { background: rgba(245,132,79,0.15); color: var(--orange); }
+  .badge-skip { background: rgba(107,107,128,0.15); color: var(--muted); }
+
+  .ts { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .desc { color: var(--text); line-height: 1.4; max-width: 600px; }
+
+  .empty { text-align: center; padding: 40px; color: var(--muted); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .reviews { padding: 14px 20px; }
+  .review-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+  .review-header { padding: 8px 12px; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 11px; color: var(--muted); cursor: pointer; display: flex; justify-content: space-between; }
+  .review-header:hover { color: var(--text); }
+  .review-body { padding: 12px; font-size: 11px; line-height: 1.6; white-space: pre-wrap; display: none; max-height: 400px; overflow-y: auto; }
+  .review-body.open { display: block; }
+
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 20px; }
+  .tab { padding: 8px 14px; font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; text-transform: uppercase; letter-spacing: 0.06em; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  #panel-reviews { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">auto<span>web</span></div>
+  <form class="url-form" onsubmit="loadFromUrl(event)">
+    <input class="url-input" id="url-input" type="text" placeholder="results.tsv URL or raw GitHub URL" />
+    <button class="load-btn" type="submit">Load</button>
+  </form>
+</header>
+
+<div id="app">
+  <div class="empty">
+    <div style="font-size:14px;margin-bottom:8px">autoweb dashboard</div>
+    <div class="hint">Enter a results.tsv URL above, or open with ?url=https://...</div>
+    <div class="hint" style="margin-top:16px">Example: <code>?url=https://raw.githubusercontent.com/inceptel/nba/main/results.tsv</code></div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const initialUrl = params.get('url') || params.get('results');
+if (initialUrl) {
+  document.getElementById('url-input').value = initialUrl;
+  fetchAndRender(initialUrl);
+}
+
+function loadFromUrl(e) {
+  e.preventDefault();
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+  const newParams = new URLSearchParams(location.search);
+  newParams.set('url', url);
+  history.replaceState(null, '', '?' + newParams.toString());
+  fetchAndRender(url);
+}
+
+async function fetchAndRender(url) {
+  const app = document.getElementById('app');
+  app.innerHTML = '<div class="empty">Loading...</div>';
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const tsv = await r.text();
+    const rows = parseTsv(tsv);
+    render(rows, url);
+  } catch (e) {
+    app.innerHTML = `<div class="empty" style="color:var(--red)">Failed to load: ${e.message}<br><div class="hint">Check the URL and CORS headers</div></div>`;
+  }
+}
+
+function parseTsv(text) {
+  const lines = text.trim().split('\n');
+  if (!lines.length) return [];
+  const headers = lines[0].split('\t');
+  return lines.slice(1).map(line => {
+    const cols = line.split('\t');
+    const obj = {};
+    headers.forEach((h, i) => obj[h.trim()] = (cols[i] || '').trim());
+    return obj;
+  }).filter(r => r.timestamp);
+}
+
+function render(rows, url) {
+  const keeps = rows.filter(r => r.status === 'keep').length;
+  const reverts = rows.filter(r => r.status === 'revert').length;
+  const crashes = rows.filter(r => r.status === 'crash').length;
+  const skips = rows.filter(r => r.status === 'skip').length;
+  const total = rows.length;
+  const rate = total > 0 ? ((keeps / total) * 100).toFixed(1) : '0';
+  const recent = [...rows].reverse().slice(0, 50);
+
+  // Try to infer reviews URL
+  const reviewsUrl = url.replace('results.tsv', '').replace(/\/$/, '');
+
+  const repoMatch = url.match(/raw\.githubusercontent\.com\/([^/]+\/[^/]+)/);
+  const repoLink = repoMatch ? `https://github.com/${repoMatch[1]}/commits/main` : null;
+
+  document.getElementById('app').innerHTML = `
+<div class="stats">
+  <div class="stat green"><div class="stat-val">${keeps}</div><div class="stat-label">Keeps</div></div>
+  <div class="stat red"><div class="stat-val">${reverts}</div><div class="stat-label">Reverts</div></div>
+  <div class="stat gold"><div class="stat-val">${rate}%</div><div class="stat-label">Keep rate</div></div>
+  <div class="stat muted"><div class="stat-val">${crashes}</div><div class="stat-label">Crashes</div></div>
+  <div class="stat muted"><div class="stat-val">${skips}</div><div class="stat-label">Skips</div></div>
+  <div class="stat muted"><div class="stat-val">${total}</div><div class="stat-label">Total</div></div>
+  ${repoLink ? `<div style="flex:1;display:flex;align-items:center;justify-content:flex-end"><a href="${repoLink}" target="_blank" style="color:var(--accent);font-size:11px;text-decoration:none">→ commit history</a></div>` : ''}
+</div>
+<div class="bar-row">
+  <div class="bar-track"><div class="bar-fill" style="width:${rate}%"></div></div>
+  <div class="bar-label">${keeps} / ${total} kept</div>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('iterations')">Iterations</button>
+  <button class="tab" onclick="switchTab('reviews')">Reviews</button>
+</div>
+<div id="panel-iterations">
+  <div class="section">
+    <table>
+      <thead><tr><th>Time</th><th>Status</th><th>Description</th></tr></thead>
+      <tbody>
+        ${recent.map(r => `
+        <tr>
+          <td class="ts">${formatTs(r.timestamp)}</td>
+          <td><span class="badge badge-${r.status}">${r.status}</span></td>
+          <td class="desc">${escHtml(r.description || '')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div id="panel-reviews" style="display:none">
+  <div class="reviews" id="reviews-container">
+    <div class="hint" style="padding:20px 0">Loading reviews...</div>
+  </div>
+</div>`;
+
+  // Try to load reviews from same base URL
+  if (url.includes('raw.githubusercontent.com')) {
+    // Can't list directory — show link instead
+    document.getElementById('reviews-container').innerHTML =
+      `<div class="hint">Reviews are in the repo's autoweb instance.<br><a href="${repoLink}" target="_blank" style="color:var(--accent)">Browse commits on GitHub →</a></div>`;
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['iterations','reviews'][i] === tab));
+  document.getElementById('panel-iterations').style.display = tab === 'iterations' ? '' : 'none';
+  document.getElementById('panel-reviews').style.display = tab === 'reviews' ? '' : 'none';
+}
+
+function formatTs(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' ' +
+         d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
