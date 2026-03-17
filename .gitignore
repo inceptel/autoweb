@@ -1,0 +1,12 @@
+autoweb.log
+autoweb.pid
+review.log
+review.pid
+deadline
+current.txt
+feather-prod.png
+feather2.png
+logs/
+reviews/
+results.tsv
+breadcrumbs.md
