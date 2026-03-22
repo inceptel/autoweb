@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<title>Autoweb</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e14;--s1:#0f1318;--s2:#141820;--s3:#1a2030;
+  --b1:#1e2535;--b2:#252d3d;
+  --t1:#c8cdd8;--t2:#8892a4;--t3:#556070;
+  --green:#4ade80;--gbg:rgba(74,222,128,0.1);
+  --red:#f87171;--rbg:rgba(248,113,113,0.1);
+  --yel:#fbbf24;--ybg:rgba(251,191,36,0.1);
+  --blue:#60a5fa;--bbg:rgba(96,165,250,0.08);
+}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:'Inter',system-ui,sans-serif;font-size:13px;line-height:1.5;overflow:hidden}
+.layout{display:flex;flex-direction:column;height:100%}
+.hdr{padding:10px 16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--s1)}
+.hdr-title{font-size:13px;font-weight:600;color:#e2e8f0;letter-spacing:.02em}
+.hdr-meta{margin-left:auto;font-size:11px;color:var(--t3);display:flex;gap:14px;align-items:center}
+.hdr-meta .run{color:var(--green);font-weight:600}
+.body{display:flex;flex:1;overflow:hidden;min-height:0}
+/* Sidebar */
+.sb{width:260px;border-right:1px solid var(--b1);overflow-y:auto;flex-shrink:0}
+.card{padding:10px 12px;border-bottom:1px solid var(--b1);cursor:pointer;transition:background .1s;border-left:2px solid transparent}
+.card:hover{background:var(--s2)}
+.card.on{background:var(--s3);border-left-color:var(--blue)}
+/* Mobile: back button in detail header */
+.back-btn{display:none;background:transparent;border:none;color:var(--blue);font-size:13px;cursor:pointer;padding:0 8px 0 0;flex-shrink:0}
+@media(max-width:600px){
+  .body{position:relative}
+  .sb{width:100%;border-right:none;position:absolute;inset:0;z-index:2;background:var(--bg)}
+  .sb.hidden{display:none}
+  .det{position:absolute;inset:0;z-index:3;background:var(--bg);display:none!important}
+  .det.show{display:flex!important}
+  .back-btn{display:inline-block}
+}
+.ch{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.cn{font-weight:600;color:#e2e8f0;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
+.br{color:var(--green);background:var(--gbg)}
+.bs{color:var(--t3);background:rgba(85,96,112,.12)}
+.bk{color:var(--green);background:var(--gbg)}
+.bv{color:var(--red);background:var(--rbg)}
+.bc{color:var(--yel);background:var(--ybg)}
+.bx{color:var(--t3);background:rgba(85,96,112,.1)}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0;animation:p 2s infinite}
+@keyframes p{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.4)}50%{box-shadow:0 0 0 3px transparent}}
+.cs{display:flex;gap:8px;font-size:10px;color:var(--t3)}
+.cs .k{color:#4ade8088}.cs .r{color:#f8717188}.cs .c{color:#fbbf2488}
+.cc{margin-top:4px;font-size:11px;color:var(--t2);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cc.live{color:var(--yel)}
+/* Detail */
+.det{flex:1;overflow-y:auto;min-width:0;display:flex;flex-direction:column}
+.dh{padding:11px 16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:8px;position:sticky;top:0;background:var(--bg);z-index:10;flex-shrink:0}
+.dt{font-size:14px;font-weight:600;color:#e2e8f0}
+.dm{font-size:11px;color:var(--t3);margin-left:auto;display:flex;gap:10px;align-items:center}
+.cur{padding:8px 16px;background:var(--s2);border-bottom:1px solid var(--b1);font-size:12px;color:var(--yel);line-height:1.4;display:none;flex-shrink:0}
+.cur.on{display:block}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:49px;background:var(--bg);text-align:left;padding:6px 16px;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--b1);z-index:5}
+td{padding:7px 16px;border-bottom:1px solid var(--b1);vertical-align:top}
+tr:hover td{background:var(--s2)}
+.ts{font-family:ui-monospace,monospace;font-size:10px;color:var(--t3);white-space:nowrap;width:105px}
+.sc{width:74px}
+.desc{color:var(--t1);line-height:1.5;word-break:break-word;font-size:12px}
+.empty{padding:32px 16px;color:var(--t3);text-align:center}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="hdr">
+    <span class="hdr-title">⚡ Autoweb</span>
+    <div class="hdr-meta">
+      <span><span class="run" id="h-run">0</span> running</span>
+      <span><span id="h-tot">0</span> instances</span>
+      <span id="h-ts">–</span>
+    </div>
+  </div>
+  <div class="body">
+    <div class="sb" id="sb"><div class="empty">Loading…</div></div>
+    <div class="det" id="det">
+      <div class="empty" id="d-ph">← Select an instance</div>
+      <div id="d-in" style="display:none;flex-direction:column;flex:1">
+        <div class="dh">
+          <button class="back-btn" onclick="goBack()">‹ back</button>
+          <span class="dt" id="d-name"></span>
+          <div class="dm"><span id="d-badge"></span><span id="d-stats"></span></div>
+        </div>
+        <div class="cur" id="d-cur"></div>
+        <table>
+          <thead><tr><th>Time</th><th class="sc">Status</th><th>Description</th></tr></thead>
+          <tbody id="d-tb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+let instances=[], sel=null;
+const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function fts(ts){
+  if(!ts)return'—';
+  try{return new Date(ts).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).replace(',','');}
+  catch{return ts.slice(0,16)}
+}
+function ago(ts){
+  if(!ts)return'';
+  const d=Math.floor((Date.now()-new Date(ts))/1000);
+  if(d<60)return d+'s ago';if(d<3600)return Math.floor(d/60)+'m ago';
+  if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';
+}
+function strip(s){return(s||'').replace(/^Running at \d+:\d+ UTC[^—]*—[^.]*\.\s*Last:\s*/i,'').trim();}
+
+function renderSb(){
+  const run=instances.filter(i=>i.running).length;
+  document.getElementById('h-run').textContent=run;
+  document.getElementById('h-tot').textContent=instances.length;
+  if(!instances.length){document.getElementById('sb').innerHTML='<div class="empty">No instances</div>';return;}
+  document.getElementById('sb').innerHTML=instances.map(i=>{
+    const wr=i.workers_running;
+    const runBadge=wr
+      ? (wr.length?`<span class="badge br"><span class="pulse"></span>${wr.join(' ')} running</span>`:`<span class="badge bs">stopped</span>`)
+      : `<span class="badge ${i.running?'br':'bs'}">${i.running?'<span class="pulse"></span>running':'stopped'}</span>`;
+    const lastEntry=i.recent?.find(r=>r.status==='keep');
+    const txt=lastEntry?lastEntry.desc:'';
+    return`<div class="card${sel===i.name?' on':''}" onclick="pick('${i.name}')">
+      <div class="ch"><span class="cn">${e(i.name)}</span>${runBadge}</div>
+      <div class="cs"><span class="k">▲${i.keeps}</span><span class="r">▼${i.reverts}</span><span class="c">✕${i.crashes}</span></div>
+      ${txt?`<div class="cc">${e(txt.slice(0,140))}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+const WORKER_COLORS={'w1':'#60a5fa','w2':'#a78bfa','w3':'#34d399'};
+
+function renderDet(i){
+  document.getElementById('d-ph').style.display='none';
+  const inn=document.getElementById('d-in');inn.style.display='flex';
+  document.getElementById('d-name').textContent=i.name;
+  const wr=i.workers_running;
+  const badgeHtml=wr
+    ? (wr.length?`<span class="badge br">● ${wr.length}/3 running</span>`:`<span class="badge bs">stopped</span>`)
+    : `<span class="badge ${i.running?'br':'bs'}">${i.running?'● running':'stopped'}</span>`;
+  document.getElementById('d-badge').innerHTML=badgeHtml;
+  document.getElementById('d-stats').textContent=`${i.keeps}k · ${i.reverts}r · ${i.crashes}c`;
+  const cur=document.getElementById('d-cur');
+  if(i.current){
+    cur.innerHTML=i.current.split('\n').map(l=>e(l)).join('<br>');
+    cur.classList.add('on');
+  } else cur.classList.remove('on');
+  const tb=document.getElementById('d-tb');
+  if(!i.recent?.length){tb.innerHTML='<tr><td colspan="3" class="empty">No results yet</td></tr>';return;}
+  tb.innerHTML=i.recent.map(r=>{
+    const cl={keep:'bk',revert:'bv',crash:'bc'}[r.status]||'bx';
+    const wLabel=r.worker?`<span style="font-size:9px;font-weight:700;color:${WORKER_COLORS[r.worker]||'var(--t3)'};margin-right:4px">${r.worker}</span>`:'';
+    return`<tr><td class="ts">${fts(r.ts)}</td><td class="sc"><span class="badge ${cl}">${r.status}</span></td><td>${wLabel}<span class="desc">${e(r.desc)}</span></td></tr>`;
+  }).join('');
+}
+
+function pick(name){
+  sel=name;renderSb();
+  const i=instances.find(x=>x.name===name);if(i)renderDet(i);
+  // mobile: show detail panel
+  if(window.innerWidth<=600){
+    document.getElementById('sb').classList.add('hidden');
+    document.getElementById('det').classList.add('show');
+  }
+}
+function goBack(){
+  document.getElementById('sb').classList.remove('hidden');
+  document.getElementById('det').classList.remove('show');
+}
+
+async function refresh(){
+  try{
+    const data=await fetch('/autoweb/api/status?_='+Date.now()).then(r=>r.json());
+    instances=data.sort((a,b)=>b.running-a.running||b.keeps-a.keeps);
+    renderSb();
+    if(sel){const i=instances.find(x=>x.name===sel);if(i)renderDet(i);}
+    document.getElementById('h-ts').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  }catch(err){document.getElementById('h-ts').textContent='error';}
+}
+
+async function init(){
+  await refresh();
+  if(!sel&&instances.length)pick((instances.find(i=>i.running)||instances[0]).name);
+}
+init();setInterval(refresh,5000);
+</script>
+</body>
+</html>
