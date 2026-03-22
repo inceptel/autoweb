@@ -155,6 +155,49 @@ printf "%s\trevert\tREASON\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $WORKER_DIR/re
 
 ---
 
+## Rust backend
+
+The server is a Rust binary. Most jank is frontend-only, but some bugs are in the backend (SSE, session loading, file uploads, search). You can read, edit, and rebuild it.
+
+### Where things are
+- Source: `$WORKTREE/src/main.rs` (single file)
+- Binary: `$WORKTREE/target/release/feather-rs`
+- The server is supervised under a different name per worker:
+  - w1 → `feather-dev`
+  - w2 → `feather-w2`
+  - w3 → `feather-w3`
+
+### The app URL
+```bash
+echo "http://localhost:$PORT"   # always correct for your worker
+```
+Use `$PORT` everywhere — it's already set for your worker.
+
+### Build and restart
+```bash
+# Build (incremental, ~7s if small change)
+cd $WORKTREE && cargo build --release 2>&1 | tail -5
+
+# Restart your server (substitutes correct name based on WORKER_NUM)
+SVCNAME="feather-dev"
+[ "$WORKER_NUM" = "2" ] && SVCNAME="feather-w2"
+[ "$WORKER_NUM" = "3" ] && SVCNAME="feather-w3"
+supervisorctl -c /etc/supervisor/conf.d/supervisord.conf restart $SVCNAME
+
+# Wait for it to come back up
+sleep 2 && curl -s -o /dev/null -w "%{http_code}" http://localhost:$PORT/
+```
+
+### Workflow for a Rust fix
+1. Read `$WORKTREE/src/main.rs` — find the relevant handler
+2. Make the change
+3. `cargo build --release` — fix any compile errors
+4. Restart the supervisor service (above)
+5. Verify with agent-browser or curl
+6. `git add -A && git commit -m "fix(backend): description"`
+
+---
+
 ## Jank hit list
 
 If explore.sh finds nothing, pick the highest-priority item here. Mark done in breadcrumbs so other workers skip it.
