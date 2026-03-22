@@ -60,6 +60,8 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:'Inter',s
 .dm{font-size:11px;color:var(--t3);margin-left:auto;display:flex;gap:10px;align-items:center}
 .cur{padding:8px 16px;background:var(--s2);border-bottom:1px solid var(--b1);font-size:12px;color:var(--yel);line-height:1.4;display:none;flex-shrink:0}
 .cur.on{display:block}
+.lmsg{padding:6px 16px 8px;font-size:11px;color:var(--t2);line-height:1.5;border-bottom:1px solid var(--b1);display:none;white-space:pre-wrap;max-height:120px;overflow-y:auto;flex-shrink:0}
+.lmsg.on{display:block}
 table{width:100%;border-collapse:collapse}
 th{position:sticky;top:49px;background:var(--bg);text-align:left;padding:6px 16px;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--b1);z-index:5}
 td{padding:7px 16px;border-bottom:1px solid var(--b1);vertical-align:top}
@@ -92,6 +94,7 @@ tr:hover td{background:var(--s2)}
           <div class="dm"><span id="d-badge"></span><span id="d-stats"></span></div>
         </div>
         <div class="cur" id="d-cur"></div>
+        <div class="lmsg" id="d-lmsg"></div>
         <table>
           <thead><tr><th>Time</th><th class="sc">Status</th><th>Description</th></tr></thead>
           <tbody id="d-tb"></tbody>
@@ -149,11 +152,12 @@ function renderDet(i){
     : `<span class="badge ${i.running?'br':'bs'}">${i.running?'● running':'stopped'}</span>`;
   document.getElementById('d-badge').innerHTML=badgeHtml;
   document.getElementById('d-stats').textContent=`${i.keeps}k · ${i.reverts}r · ${i.crashes}c`;
-  const cur=document.getElementById('d-cur');
+  const cur=document.getElementById('d-cur');const lmsg=document.getElementById('d-lmsg');
   if(i.current){
     cur.innerHTML=i.current.split('\n').map(l=>e(l)).join('<br>');
     cur.classList.add('on');
   } else cur.classList.remove('on');
+  if(i.last_msg&&i.running){lmsg.textContent=i.last_msg.slice(0,400);lmsg.classList.add('on');}else lmsg.classList.remove('on');
   const tb=document.getElementById('d-tb');
   if(!i.recent?.length){tb.innerHTML='<tr><td colspan="3" class="empty">No results yet</td></tr>';return;}
   tb.innerHTML=i.recent.map(r=>{

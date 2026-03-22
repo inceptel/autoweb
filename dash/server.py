@@ -7,6 +7,39 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 HOME = Path.home()
 
+
+def claude_project_dir(harness_dir: Path) -> Path:
+    """Map a harness working dir to ~/.claude/projects/<slug>."""
+    slug = str(harness_dir).replace("/", "-")
+    return HOME / ".claude" / "projects" / slug
+
+
+def latest_session_msg(harness_dir: Path) -> str:
+    """Return the last assistant text from the most recent Claude session, or ''."""
+    try:
+        proj = claude_project_dir(harness_dir)
+        if not proj.is_dir():
+            return ""
+        files = sorted(proj.glob("*.jsonl"), key=lambda f: f.stat().st_mtime, reverse=True)
+        if not files:
+            return ""
+        lines = files[0].read_text(errors="replace").splitlines()
+        for line in reversed(lines):
+            try:
+                d = json.loads(line)
+                msg = d.get("message", {})
+                if msg.get("role") == "assistant":
+                    for block in msg.get("content", []):
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            text = block["text"].strip()
+                            if text:
+                                return text
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return ""
+
 FEATHER_WORKERS = [
     ("w1", HOME / "autoweb"),
     ("w2", HOME / "autoweb-w2"),
@@ -71,6 +104,13 @@ def load_status():
             pass
 
     all_recent.sort(key=lambda e: e.get("ts", ""), reverse=True)
+    # latest session msg — check each running worker, use first non-empty
+    last_msg = ""
+    for label, d in FEATHER_WORKERS:
+        if is_running(d):
+            last_msg = latest_session_msg(d)
+            if last_msg:
+                break
     result.append({
         "name": "feather",
         "running": len(workers_running) > 0,
@@ -78,6 +118,7 @@ def load_status():
         "keeps": total_keeps, "reverts": total_reverts,
         "crashes": total_crashes, "skips": total_skips,
         "current": "\n".join(worker_currents),
+        "last_msg": last_msg,
         "recent": all_recent[:150],
     })
 
@@ -101,7 +142,9 @@ def load_status():
         result.append({
             "name": slug, "running": is_running(p),
             "keeps": k, "reverts": r, "crashes": c, "skips": s,
-            "current": current, "recent": entries[:100],
+            "current": current,
+            "last_msg": latest_session_msg(p) if is_running(p) else "",
+            "recent": entries[:100],
         })
 
     result.sort(key=lambda x: (-x["running"], -x["keeps"]))
