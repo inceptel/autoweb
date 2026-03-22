@@ -56,12 +56,22 @@ while true; do
     ITERATION=$((ITERATION + 1))
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-    # Sync worker branch with latest dev before each iteration.
-    # This keeps w2/w3 from diverging after w4 merges their work into dev.
-    # -X ours on static/ because we rebuild anyway; source changes auto-merge.
-    if [ "$WORKER_NUM" != "1" ]; then
-        git -C "$WORKTREE" merge dev --no-edit -X ours -- static/ 2>/dev/null \
+    # Two-way sync before each iteration:
+    #   w1 (dev) merges from w2 and w3 — dev is the merger
+    #   w2/w3 merge from dev — workers stay current
+    # Build artifacts (index-*.js/css, index.html) are gitignored so merges are clean.
+    # If a source conflict occurs, we abort and let Claude work on the current state.
+    HASH_BEFORE=$(git -C "$WORKTREE" rev-parse HEAD)
+    if [ "$WORKER_NUM" = "1" ]; then
+        git -C "$WORKTREE" merge dev-w2 dev-w3 --no-edit 2>/dev/null \
             || git -C "$WORKTREE" merge --abort 2>/dev/null
+    else
+        git -C "$WORKTREE" merge dev --no-edit 2>/dev/null \
+            || git -C "$WORKTREE" merge --abort 2>/dev/null
+    fi
+    HASH_AFTER=$(git -C "$WORKTREE" rev-parse HEAD)
+    if [ "$HASH_BEFORE" != "$HASH_AFTER" ]; then
+        (cd "$WORKTREE/frontend" && npm run build > /dev/null 2>&1) || true
     fi
     LOGFILE="$LOGDIR/iteration-$(printf '%04d' $ITERATION)-$(date +%s).log"
 
