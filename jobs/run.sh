@@ -108,6 +108,9 @@ while true; do
             [ -z "$REASON" ] && REASON="No output from Claude"
             printf "%s\tskip\t%s\n" "$TIMESTAMP" "$REASON" >> "$RESULTS"
         fi
+        # Push to GitHub as FeatherBot
+        BRANCH=$(git -C "$WORKTREE" rev-parse --abbrev-ref HEAD)
+        git -C "$WORKTREE" push origin "$BRANCH" > /dev/null 2>&1 || true
     fi
 
     sleep "$SLEEP_BETWEEN"
