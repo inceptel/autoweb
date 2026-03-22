@@ -200,7 +200,7 @@ sleep 2 && curl -s -o /dev/null -w "%{http_code}" http://localhost:$PORT/
 
 ## Jank hit list
 
-If explore.sh finds nothing, pick the highest-priority item here. Mark done in breadcrumbs so other workers skip it.
+If free exploration finds nothing, pick the highest-priority item here. Mark done in breadcrumbs so other workers skip it.
 
 ### 🔴 HIGH — fix these first
 - **Error states** — failed session load shows nothing; should show message + retry button. Failed send = toast. SSE disconnect = subtle reconnecting banner.
