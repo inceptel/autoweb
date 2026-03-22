@@ -35,24 +35,77 @@ Injected at start of your prompt:
 cat $WORKER_DIR/breadcrumbs.md
 ```
 
-### Step 2 — DEJANKINATE: explore deeply
+### Step 2 — DEJANKINATE: explore freely with agent-browser
+
+Don't follow a script. Use agent-browser directly to poke around the app like a curious user. Take screenshots often. Look at them. The goal is to find things that look or feel wrong.
+
+**Basic agent-browser usage:**
 ```bash
-PORT=$PORT SCREENSHOTS_DIR=$WORKER_DIR bash $WORKTREE/autoweb-tests/explore.sh
+S="explore-$$"   # session name — reuse across commands so browser stays open
+
+# Navigate and wait
+agent-browser --session-name $S open http://localhost:$PORT/
+agent-browser --session-name $S wait --load networkidle
+agent-browser --session-name $S wait 2000   # extra wait for async data
+
+# See what's on screen (accessibility tree — interactive elements only)
+agent-browser --session-name $S snapshot -i
+
+# Click by accessible name — no ref hunting needed
+agent-browser --session-name $S find role button click --name "Settings"
+agent-browser --session-name $S find role link click --name "New Claude"
+
+# Or click by ref from snapshot
+agent-browser --session-name $S click @e5
+
+# Fill inputs
+agent-browser --session-name $S find role textbox fill "search query" --name "Search"
+
+# Screenshots — look at these
+agent-browser --session-name $S screenshot $WORKER_DIR/shot-01-mobile.png
+agent-browser --session-name $S screenshot --full $WORKER_DIR/shot-01-full.png  # full page
+agent-browser --session-name $S screenshot --annotate $WORKER_DIR/shot-annotated.png  # labeled
+
+# Check for horizontal overflow
+agent-browser --session-name $S eval 'document.documentElement.scrollWidth > window.innerWidth'
+
+# Set viewport
+agent-browser --session-name $S set viewport 390 844   # mobile
+agent-browser --session-name $S set viewport 1280 800  # desktop
 ```
 
-**Read every `[ISSUE]` line.** Then open the screenshots and actually look at them — issues not caught by script are visible in images. Look for:
+**Example exploration flow:**
+```bash
+S="explore-$$"
+# Mobile load
+agent-browser --session-name $S set viewport 390 844
+agent-browser --session-name $S open http://localhost:$PORT/
+agent-browser --session-name $S wait --load networkidle && agent-browser --session-name $S wait 2000
+agent-browser --session-name $S screenshot $WORKER_DIR/01-mobile.png
+# Open a session
+agent-browser --session-name $S eval "document.querySelector('[data-session-id]')?.click()"
+agent-browser --session-name $S wait 1500
+agent-browser --session-name $S screenshot $WORKER_DIR/02-session.png
+# Scroll to bottom
+agent-browser --session-name $S scroll down 9999
+agent-browser --session-name $S screenshot $WORKER_DIR/03-bottom.png
+# Try light mode
+agent-browser --session-name $S find role button click --name "Settings"
+agent-browser --session-name $S wait 400
+agent-browser --session-name $S screenshot $WORKER_DIR/04-settings.png
+```
 
-- Clipped text, overflow, horizontal scroll where there shouldn't be any
-- Contrast failures (text barely visible in light OR dark mode)
-- Missing hover/focus states
-- Misaligned elements, uneven spacing, visual inconsistency
-- Broken markdown rendering (code blocks, tables, links, headings)
-- Janky or missing animations
-- Empty states that show nothing (loading spinner forever, blank pane)
-- Touch targets smaller than 44×44px on mobile
-- Elements that look fine at 390px but stretch weirdly at 1280px
+**What to look for:**
+- Clipped text, horizontal overflow, content spilling outside its container
+- Contrast failures — text barely readable in light or dark mode
+- Broken markdown (code blocks wrapping instead of scrolling, busted tables)
+- Empty/blank states — loading forever, pane shows nothing
+- Touch targets too small on mobile (anything interactive should be ≥ 44×44px)
+- Misalignment, uneven spacing, visual inconsistency
+- Janky or missing transitions/animations
+- Anything that makes you think "that looks wrong"
 
-Pick the **most visually impactful** issue from your findings.
+Take a screenshot whenever something catches your eye. Then fix the most impactful thing you found.
 
 ### Step 3 — Red-green
 
@@ -139,11 +192,6 @@ Pure functions in `$WORKTREE/frontend/src/utils/`:
 - `format.ts` — `formatTime`, `formatDuration`, `formatToolDuration`, `getDateLabel`
 - `messages.ts` — `dedup`, `sortByTimestamp`, `mergeMessages`, `filterSseMessages`, `extractText`, `matchesOptimistic`
 - `parse.ts` — `stripAnsi`, `stripSystemTags`, `parseUserMsg`, `linkifyText`, `pathToWebUrl`, `highlightText`
-
-### E2E exploration — run every iteration
-```bash
-PORT=$PORT SCREENSHOTS_DIR=$WORKER_DIR bash $WORKTREE/autoweb-tests/explore.sh
-```
 
 ### E2E live tests — run when relevant
 ```bash
