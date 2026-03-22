@@ -55,6 +55,14 @@ echo "[autoweb-w$WORKER_NUM] Logs:    $LOGDIR"
 while true; do
     ITERATION=$((ITERATION + 1))
     TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    # Sync worker branch with latest dev before each iteration.
+    # This keeps w2/w3 from diverging after w4 merges their work into dev.
+    # -X ours on static/ because we rebuild anyway; source changes auto-merge.
+    if [ "$WORKER_NUM" != "1" ]; then
+        git -C "$WORKTREE" merge dev --no-edit -X ours -- static/ 2>/dev/null \
+            || git -C "$WORKTREE" merge --abort 2>/dev/null
+    fi
     LOGFILE="$LOGDIR/iteration-$(printf '%04d' $ITERATION)-$(date +%s).log"
 
     echo "[autoweb-w$WORKER_NUM] === Iteration $ITERATION at $TIMESTAMP ==="
