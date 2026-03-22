@@ -53,13 +53,15 @@ agent-browser --session-name $S snapshot -i
 
 # Click by accessible name — no ref hunting needed
 agent-browser --session-name $S find role button click --name "Settings"
-agent-browser --session-name $S find role link click --name "New Claude"
+agent-browser --session-name $S find role button click --name "New Claude"
 
-# Or click by ref from snapshot
-agent-browser --session-name $S click @e5
+# Snapshot shows [ref=eN] — click uses @eN
+agent-browser --session-name $S snapshot -i   # shows [ref=e5], [ref=e12] etc
+agent-browser --session-name $S click @e5     # drop the brackets, add @
 
-# Fill inputs
-agent-browser --session-name $S find role textbox fill "search query" --name "Search"
+# Fill inputs: find the ref from snapshot, then fill
+agent-browser --session-name $S snapshot -i   # find textbox ref, e.g. [ref=e3]
+agent-browser --session-name $S fill @e3 "search query"
 
 # Screenshots — look at these
 agent-browser --session-name $S screenshot $WORKER_DIR/shot-01-mobile.png
