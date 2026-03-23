@@ -61,7 +61,6 @@ while true; do
 
     echo "$PROMPT" | timeout "$TIMEOUT" "$CODEX" exec \
         --dangerously-bypass-approvals-and-sandbox \
-        -c "model=${CODEX_MODEL:-codex-mini-latest}" \
         - \
         > "$LOGFILE" 2>&1
 
