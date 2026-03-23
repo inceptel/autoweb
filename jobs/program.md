@@ -76,28 +76,112 @@ agent-browser --session-name $S set viewport 390 844   # mobile
 agent-browser --session-name $S set viewport 1280 800  # desktop
 ```
 
-**Example exploration flow:**
+**Go through real user journeys — don't just screenshot the sidebar.**
+
+Pick at least 2 of these each iteration and actually do them:
+
+---
+
+**Journey 1 — Send a message and watch it come in**
 ```bash
 S="explore-$$"
-# Mobile load
 agent-browser --session-name $S set viewport 390 844
 agent-browser --session-name $S open http://localhost:$PORT/
 agent-browser --session-name $S wait --load networkidle && agent-browser --session-name $S wait 2000
-agent-browser --session-name $S screenshot $WORKER_DIR/01-mobile.png
-# Open a session
+# Start a new session
 agent-browser --session-name $S eval "document.querySelector('[data-session-id]')?.click()"
 agent-browser --session-name $S wait 1500
-agent-browser --session-name $S screenshot $WORKER_DIR/02-session.png
+agent-browser --session-name $S screenshot $WORKER_DIR/01-before-send.png
+# Type and send a message
+agent-browser --session-name $S snapshot -i   # find the textarea ref
+agent-browser --session-name $S fill @eN "hello, what is 2+2?"
+agent-browser --session-name $S screenshot $WORKER_DIR/02-typed.png
+agent-browser --session-name $S press "Enter"
+agent-browser --session-name $S wait 800
+agent-browser --session-name $S screenshot $WORKER_DIR/03-optimistic.png   # message should appear instantly
+agent-browser --session-name $S wait 4000
+agent-browser --session-name $S screenshot $WORKER_DIR/04-streaming.png    # response streaming in
+```
+Look for: optimistic render delay, streaming jank, layout shift as response grows, input not clearing.
+
+---
+
+**Journey 2 — Long conversation with tool cards**
+```bash
+S="explore-$$"
+agent-browser --session-name $S set viewport 390 844
+agent-browser --session-name $S open http://localhost:$PORT/
+agent-browser --session-name $S wait --load networkidle && agent-browser --session-name $S wait 2000
+# Find the longest session (most tool use) — click the first one
+agent-browser --session-name $S eval "document.querySelector('[data-session-id]')?.click()"
+agent-browser --session-name $S wait 2000
+agent-browser --session-name $S screenshot $WORKER_DIR/05-session-top.png
 # Scroll to bottom
 agent-browser --session-name $S scroll down 9999
-agent-browser --session-name $S screenshot $WORKER_DIR/03-bottom.png
-# Try light mode
+agent-browser --session-name $S wait 500
+agent-browser --session-name $S screenshot $WORKER_DIR/06-session-bottom.png
+# Expand a tool card
+agent-browser --session-name $S snapshot -i   # find a tool card button
+agent-browser --session-name $S click @eN     # click it
+agent-browser --session-name $S wait 400
+agent-browser --session-name $S screenshot $WORKER_DIR/07-tool-expanded.png
+```
+Look for: overflow in tool output, long bash output blowing out layout, code blocks wrapping instead of scrolling.
+
+---
+
+**Journey 3 — New session flow**
+```bash
+S="explore-$$"
+agent-browser --session-name $S set viewport 390 844
+agent-browser --session-name $S open http://localhost:$PORT/
+agent-browser --session-name $S wait --load networkidle && agent-browser --session-name $S wait 2000
+agent-browser --session-name $S find role button click --name "New Claude"
+agent-browser --session-name $S wait 800
+agent-browser --session-name $S screenshot $WORKER_DIR/08-new-session.png
+```
+Look for: input focused? placeholder visible? blank pane? anything broken about the empty state?
+
+---
+
+**Journey 4 — Light mode end-to-end**
+```bash
+S="explore-$$"
+agent-browser --session-name $S open http://localhost:$PORT/
+agent-browser --session-name $S wait --load networkidle && agent-browser --session-name $S wait 2000
 agent-browser --session-name $S find role button click --name "Settings"
 agent-browser --session-name $S wait 400
-agent-browser --session-name $S screenshot $WORKER_DIR/04-settings.png
+agent-browser --session-name $S snapshot -i   # find Light mode button ref
+agent-browser --session-name $S click @eN
+agent-browser --session-name $S wait 500
+agent-browser --session-name $S eval "document.querySelector('[data-session-id]')?.click()"
+agent-browser --session-name $S wait 1500
+agent-browser --session-name $S screenshot $WORKER_DIR/09-light-session.png
+agent-browser --session-name $S scroll down 9999
+agent-browser --session-name $S screenshot $WORKER_DIR/10-light-bottom.png
 ```
+Look for: any text that disappears, low contrast, unstyled elements, code blocks in light mode.
 
-**What to look for:**
+---
+
+**Journey 5 — Desktop layout**
+```bash
+S="explore-$$"
+agent-browser --session-name $S set viewport 1280 800
+agent-browser --session-name $S open http://localhost:$PORT/
+agent-browser --session-name $S wait --load networkidle && agent-browser --session-name $S wait 2000
+agent-browser --session-name $S screenshot $WORKER_DIR/11-desktop.png
+agent-browser --session-name $S eval "document.querySelector('[data-session-id]')?.click()"
+agent-browser --session-name $S wait 1500
+agent-browser --session-name $S screenshot $WORKER_DIR/12-desktop-session.png
+agent-browser --session-name $S scroll down 9999
+agent-browser --session-name $S screenshot $WORKER_DIR/13-desktop-bottom.png
+```
+Look for: sidebar too wide/narrow, content stretching oddly, max-width issues, anything that looks weird at 1280px.
+
+---
+
+**What to look for in every screenshot:**
 - Clipped text, horizontal overflow, content spilling outside its container
 - Contrast failures — text barely readable in light or dark mode
 - Broken markdown (code blocks wrapping instead of scrolling, busted tables)
