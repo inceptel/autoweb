@@ -40,11 +40,14 @@ def latest_session_msg(harness_dir: Path) -> str:
         pass
     return ""
 
-FEATHER_WORKERS = [
-    ("w1", HOME / "autoweb"),
-    ("w2", HOME / "autoweb-w2"),
-    ("w3", HOME / "autoweb-w3"),
-]
+def discover_feather_workers():
+    workers = [("w1", HOME / "autoweb")]
+    for d in sorted(HOME.glob("autoweb-w*")):
+        label = d.name.replace("autoweb-", "")
+        workers.append((label, d))
+    return workers
+
+FEATHER_WORKERS = discover_feather_workers()
 
 # Other instances: any ~/autoweb-X dir that isn't a feather worker
 OTHER_SLUGS_SKIP = {"w2", "w3"}
@@ -90,7 +93,7 @@ def load_status():
     all_recent = []
     workers_running = []
     worker_currents = []
-    for label, d in FEATHER_WORKERS:
+    for label, d in discover_feather_workers():
         k, r, c, s, entries = parse_tsv(d / "results.tsv", worker_label=label)
         total_keeps += k; total_reverts += r; total_crashes += c; total_skips += s
         all_recent.extend(entries)
@@ -106,7 +109,7 @@ def load_status():
     all_recent.sort(key=lambda e: e.get("ts", ""), reverse=True)
     # latest session msg — check each running worker, use first non-empty
     last_msg = ""
-    for label, d in FEATHER_WORKERS:
+    for label, d in discover_feather_workers():
         if is_running(d):
             last_msg = latest_session_msg(d)
             if last_msg:
