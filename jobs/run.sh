@@ -63,7 +63,7 @@ while true; do
     # If a source conflict occurs, we abort and let Claude work on the current state.
     HASH_BEFORE=$(git -C "$WORKTREE" rev-parse HEAD)
     if [ "$WORKER_NUM" = "1" ]; then
-        git -C "$WORKTREE" merge dev-w2 dev-w3 --no-edit 2>/dev/null \
+        git -C "$WORKTREE" merge dev-w2 dev-w3 dev-w4 dev-w5 dev-w6 --no-edit 2>/dev/null \
             || git -C "$WORKTREE" merge --abort 2>/dev/null
     else
         git -C "$WORKTREE" merge dev --no-edit 2>/dev/null \
